@@ -8,11 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_DEFAULT_TIMEOUT=100
 
-# Create app directory and set up user first
-RUN mkdir -p /app && \
-    useradd -m appuser && \
-    chown -R appuser:appuser /app
-
+# Create app directory
 WORKDIR /app
 
 # Install system dependencies with security updates
@@ -27,16 +23,17 @@ RUN apt-get update && \
 # Install spaCy English model
 RUN pip install --no-cache-dir spacy && python -m spacy download en_core_web_sm
 
-# Switch to non-root user
-USER appuser
-
 # Copy requirements first to leverage Docker cache
-COPY --chown=appuser:appuser requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY --chown=appuser:appuser app1.py .
+COPY . .
+
+# Create and switch to non-root user
+RUN useradd -m appuser && chown -R appuser /app
+USER appuser
 
 # Use production-grade server
-EXPOSE 80
-CMD ["streamlit", "run", "app1.py", "--server.port=80", "--server.address=0.0.0.0"]
+EXPOSE 8501
+CMD ["streamlit", "run", "app1.py", "--server.port=8501", "--server.address=0.0.0.0"]
